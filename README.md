@@ -4,8 +4,8 @@ Optimize performance of your Spring Boot App in the Cloud
 Performance may not necessarily be the first thing a developer worries about when developing software. But as a solution matures the aspect of performance will play its part sooner or later!
 
 # Non functional requirements
-Non-functionaly requirements (NFRs) are the key drivers in defining and designing a systems architecture. Performance is one example of such a NFR.
-In our case, where it is about to build a new iot cloud platform and ambition is to serve a growing market (number of iot devices, number of users), performance and scalability plays a key role.
+Non-functional requirements (NFRs) are the key drivers in defining and designing a systems architecture. Performance is one example of such a NFR.
+In our case, where it is about to build a new `iot cloud platform` and ambition is to serve a growing market (number of iot devices, number of users), performance and scalability plays a key role.
 
 Below is a simplified overview of some aspects of the chosen architecture to enable these NFRs:
 
@@ -32,7 +32,7 @@ So beside other requirements we had e.g. the following requirements:
 
 Lets have again a look at the overview picture above. And lets split the app into multiple layers where we later will spend some time and analyze possible performance improvements and pitfalls:
 
-![layers](./layers.png)
+![layers](./layers2.png)
 
 
 ## Database
