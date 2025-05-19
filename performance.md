@@ -1,4 +1,5 @@
-Title: Optimize performance of your Spring Boot App in the Cloud
+Optimize performance of your Spring Boot App in the Cloud
+=========================================================
 
 Performance may not necessarily be the first thing a developer worries about when developing software. But as a solution matures the aspect of performance will play its part sooner or later!
 
