@@ -40,7 +40,7 @@ Lets have again a look at the overview picture above. And lets split the app int
 ### Chose your weapon
 Of course, the choice of which database to use already has a big impact regarding performance. So you really need to know the data you are dealing with and ideally the data access patterns. This is no simple task and as usual, there is no single, golden choice but rather a long list of considerations and compromises. Are we dealing with time-series like data? How is the data structured? Is it even structured? What are the relationships between data? How will the service evolve? What are the consumers of the data and what are their needs?
 
-Its good if the architect makes a conscious decission taking into account the above questions. And in my opinion also important not to change the DB every half a year just because there is yet another new great database that is "so much better than everything else on the market".
+Its good if the architect makes a conscious decision taking into account the above questions. And in my opinion also important not to change the DB every half a year just because there is yet another new great database that is "so much better than everything else on the market".
 
 In our case we took a Aurora PostgreSQL DB as our "weapon". No graph DB or NoSQL DB, just a "classical" relational database. Each database has its own characteristic and challenges, so not all of the following aspects may apply.
 
@@ -57,7 +57,7 @@ We faced some bottlenecks when we started to analyze our queries. And most issue
 CREATE INDEX idx_locations_is_part_of ON locations(is_part_of);
 ```
 
-For us adding indexes helped drastically to improve or rather "fix" performance (read), especially when tested and measured with higher loads. This simply because we forgot to define some "abvious" indexes. But indexes require storage and will have a bit of overhead on CUD operations.
+For us adding indexes helped drastically to improve or rather "fix" performance (read), especially when tested and measured with higher loads. This simply because we forgot to define some "obvious" indexes. But indexes require storage and will have a bit of overhead on CUD operations.
 
 ### Query Optimization
 
@@ -206,9 +206,9 @@ For infrastructure on AWS metrics are usually available or can be configured. Fo
 
 In your gradle file add a dependency for `com.amazonaws:aws-xray-recorder-sdk-bom` and then add `@XRayEnabled` annotation to e.g. your RestControllers, Services, Repositories and other important classes!
 
-If everything is properly set up, you get insights on where time is spent for a single request (e.g. by traceId). In our case, we will see how much time is spent on API GW, how much on the integration up to the java image and then we also see hoch much time is spent in each method. In case of performance issues, this helps a lot in locating the area of the issue!
+If everything is properly set up, you get insights on where time is spent for a single request (e.g. by traceId). In our case, we will see how much time is spent on API GW, how much on the integration up to the java image and then we also see how much time is spent in each method. In case of performance issues, this helps a lot in locating the area of the issue!
 
-### Other Aspects
+### Additional Performance Considerations
 
 There are many things to consider if you really want to fine tune your service! Besides the above mentioned points, things like caching or batch fetching could be beneficial. For our service we did not apply any of these on database or application level. 
 
@@ -295,7 +295,7 @@ We did our best on DB level and on application level, lets explore the possibili
 
 If the same team builds the backend and the frontend, it may be easier to align on the required API operations and fine tune it to optimize e.g. the number of requests needed to do a certain task (e.g. displaying a building and its indoor locations in a hierarchical way).
 In our case the development was split into backend teams and other teams building the UI. Those teams were even distributed all over the world. It may sound easy but its not: good communication is essential. Also understanding the other teams requirements and needs.
-Having said that, I think on API level there is maybe even the most impact on overal performance you can gain. Being a service in a cloud platform you can not fullfill all client needs on the other hand. But you should strive to optimize the core functionalities used by your service.
+Having said that, I think on API level there is maybe even the most impact on overal performance you can gain. Being a service in a cloud platform you can not fulfill all client needs on the other hand. But you should strive to optimize the core functionalities used by your service.
 
 For a REST API its important to have good filters. You dont want a frontend retrieving e.g. all x thousand buildings and searching for a specific building. And for retrieving all resources we introduced page size and number parameters so that a front-end can have better responsiveness when loading "all" resources.
 Also, if you apply just CRUD for your "database" entities you may get some performance penalties, since some clients are interested in aggregated entities that can be retrieved with just one request. In our service for instance we have `addresses` as own resource as well as `locations`.
@@ -331,9 +331,9 @@ resource "aws_api_gateway_method_settings" "method_cache_settings" {
 
 Enbaling cache will introduce a bit more costs on the AWS bill, also be aware that you may get stale data (do you remember: "there are only 2 real hard problems in software engineering: "cache invalidation, naming things and off-by-1 errors" ;-)). In our case, we decided to not enable caching on API Gateway yet.
 
-Another possibility for optimization is to enable compression by defining a `minimum_compression_size` on `aws_api_gateway_rest_api`. With that, a client can request that responses will get compressed (if payload is larger than `minimum_compression_size`). A client needs to request this explicitely by setting a http header of `Accept-Encoding:gzip`. This will compress payloads using gzip and can safe a lot of bandwith. As usual concerning performance, always measure the actual benefit!
+Another possibility for optimization is to enable compression by defining a `minimum_compression_size` on `aws_api_gateway_rest_api`. With that, a client can request that responses will get compressed (if payload is larger than `minimum_compression_size`). A client needs to request this explicitely by setting a http header of `Accept-Encoding:gzip`. This will compress payloads using gzip and can safe a lot of bandwidth. As usual concerning performance, always measure the actual benefit!
 
-Another interesting approach are HTTP entity tags (ETags), a header which a server may send together with a resource response. The client can send this tag in subsequent requests and if the tag did not change, the server will responde with `304 Not Modified`.  This will save bandwith and can result in better performance. We did not implement ETags as such but applied the concept and introduced something called "collection tags" (cTags). Its basically a hash over a resouce collection and is provided in a meta object to clients on GET requests in collection entities. After analyzing our service metrics and DB insights, we saw that for some clients data is changed rarely but still we saw regularly GET requests for many resources. Having the cTag a client can detect after one request that the entire DB is still the same and save many subsequent calls!
+Another interesting approach are HTTP entity tags (ETags), a header which a server may send together with a resource response. The client can send this tag in subsequent requests and if the tag did not change, the server will responde with `304 Not Modified`.  This will save bandwidth and can result in better performance. We did not implement ETags as such but applied the concept and introduced something called "collection tags" (cTags). Its basically a hash over a resouce collection and is provided in a meta object to clients on GET requests in collection entities. After analyzing our service metrics and DB insights, we saw that for some clients data is changed rarely but still we saw regularly GET requests for many resources. Having the cTag a client can detect after one request that the entire DB is still the same and save many subsequent calls!
 
 
 ### Bulk operations and other media types
@@ -344,7 +344,7 @@ I like json:api and its good to have a standard for APIs especially when used in
 
 ### Additional interfaces
 
-After some iterations our platform also had new requirements like having data available in a **data lake** in order to fullfill modern ML / AI use cases. A classical REST API for collecting data may not be the best choice for that. All optimization described so far wont help too much. You rather design a new dedicated interface using a different `architecture`. 
+After some iterations our platform also had new requirements like having data available in a **data lake** in order to fill modern ML / AI use cases. A classical REST API for collecting data may not be the best choice for that. All optimization described so far wont help too much. You rather design a new dedicated interface using a different `architecture`. 
 
 ## Monitoring and Testing
 
