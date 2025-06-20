@@ -14,11 +14,11 @@ Below is a simplified overview of some aspects of the chosen architecture to ena
 It shows one service of a microservice architecture. Each service runs in a AWS cloud and exposes a REST API via API Gateway.
 Traffic from the Gateway is forwarded via a loadbalancer to the actual backend application. The application in this case is built with java spring boot and runs on AWS EKS which is a managed kubernetes service. For the database, Aurora with an RDS for PostgreSQL engine is used.
 
-Given the above architecture, one could think that's it. We are in the cloud and our workloads run on kubernetes, no need to worry about scalability and performance. But thats not the case. As usual, there are many ways to do things wrong. Or in a more positive way: there are many ways to do things even better!
+Given the above architecture, one could think that's it. We are in the cloud and our workloads run on kubernetes, no need to worry about scalability and performance. But that's not the case. As usual, there are many ways to do things wrong. Or in a more positive way: there are many ways to do things even better!
 
 # Know and test your requirements
 I like simplicity and think its important to not over engineer a solution. So before you start optimizing, very important:
-be really sure what your target NFRs are, what their impact is and how you want to test them! If not needed, dont optimize!
+be really sure what your target NFRs are, what their impact is and how you want to test them! If not needed, don't optimize!
 
 Performance related NFRs are things like Response Time, Scalability, Load handling, Availability, Throughput, Latency, ...
 
@@ -46,7 +46,7 @@ In our case we took a Aurora PostgreSQL DB as our "weapon". No graph DB or NoSQL
 
 ### Table Design
 
-We all probably learnt once that a relational DB should be normalized in the third form (3NF). Thats a good starting point and avoids redundancy. Performance adjustments and thoughts into denormalization should come much later, if really needed. Also make sure the right data types are used and have a look at the sizes for text columns: Do you really need 500 characters for a phone number? Probably not. Less storage space will help you speed up things.
+We all probably learnt once that a relational DB should be normalized in the third form (3NF). That's a good starting point and avoids redundancy. Performance adjustments and thoughts into denormalization should come much later, if really needed. Also make sure the right data types are used and have a look at the sizes for text columns: Do you really need 500 characters for a phone number? Probably not. Less storage space will help you speed up things.
 What is the inheritance strategy you want to use? We started with a "table per concrete class" and later switched to "single table" inheritance. This mainly because we wanted to support read patterns which required Common Table Expression (CTE). This enabled sort of efficient queries for returning an entire building structure. E.g. like returning a location (e.g. a specific building) and all its child locations (floors and rooms) in a hierarchical way.
 
 ### Indexing
@@ -128,7 +128,7 @@ For the fetch type it really depends on the data access patterns. Again analyze 
 
 ### N+1 Problem
 
-After first performance and sql query analyses, we realised that we were having a so called N+1 problem. This problem can occur if you fetch a list of entities (e.g. locations) which results in one query. Then for each result you perform an additional query for fetching related data (e.g. getting the address of a location). So in total you are executing N+1 queries which is not efficient. Escpecially if your data tables grow, and N is becoming bigger. E.g. for 1000 locations there would be one Query to get all locations and additional 1000 queries to get the respective addresses.
+After first performance and SQL query analyses, we realized that we were having a so called N+1 problem. This problem can occur if you fetch a list of entities (e.g. locations) which results in one query. Then for each result you perform an additional query for fetching related data (e.g. getting the address of a location). So in total you are executing N+1 queries which is not efficient. Especially if your data tables grow, and N is becoming bigger. E.g. for 1000 locations there would be one Query to get all locations and additional 1000 queries to get the respective addresses.
 
 To solve such an issue, there are multiple approaches like e.g. using a custom query with a JOIN FETCH
 ```sql
@@ -153,7 +153,7 @@ With eager loading everything is fetched upfront, the mentioned approaches above
 ### Pagination
 
 On JPA/Hibernate there are other things to consider besides lazy and eager loading and the N+1 problem. Another rather obvious point which we considered from the beginning is to use pagination for retrieving large data sets.
-If your application service has a method like `getAllLocations()` you dont want to return all locations in one big call. Often its preferred to defined a page size and retrieve all entries in multiple chunks.
+If your application service has a method like `getAllLocations()` you don't want to return all locations in one big call. Often its preferred to defined a page size and retrieve all entries in multiple chunks.
 
 ```java
 Page<Location> getAllLocations(Pageable pageable);
@@ -183,7 +183,7 @@ public interface locationRepository extends JpaRepository<Location, Identifier> 
 
 Transaction management was one point, we did not handle great in the beginning. We defined write operations as transactional on Controller level and read operations were not marked as such. What did we change then?
 First its not recommended at all to use transactional on Controllers, it even may not work functionally correct (check for "proxy" and "AOP" to get into the details).
-Second, the goal is to keep transactions as short as possible since we dont want too lock DB tables too long. In our case, the method annotated with transactional contained logic that is not really required in a transaction. Putting the logic into a service method helps to split concerns. In our architecture, changes of business objects also need to emit `Domain Events`. Ideally this is not inside the DB transaction. You can use the the `Outbox Pattern` to tackle such a scenario.
+Second, the goal is to keep transactions as short as possible since we don't want too lock DB tables too long. In our case, the method annotated with transactional contained logic that is not really required in a transaction. Putting the logic into a service method helps to split concerns. In our architecture, changes of business objects also need to emit `Domain Events`. Ideally this is not inside the DB transaction. You can use the the `Outbox Pattern` to tackle such a scenario.
 
 ### Connection Pooling
 
@@ -245,7 +245,7 @@ To achieve the above a bit of configuration is required.
   }
 
   ```
-- The network NLB is mainly used to distribute the traffic. For the actual scaling on EKS additional scaling layers can be used. Since we are using `EKS Fargate` which handles underlying infrastructure itself, this is done by a so called `Horizonal Pod Autoscaler (HPA)`.
+- The network NLB is mainly used to distribute the traffic. For the actual scaling on EKS additional scaling layers can be used. Since we are using `EKS Fargate` which handles underlying infrastructure itself, this is done by a so called `Horizontal Pod Autoscaler (HPA)`.
   Scaling is always based on a metric. In our case with `Horizontal Pod Autoscaler`, we can define this in our deployment.yaml with the following values:
   ```yaml
   autoscaling:
@@ -257,7 +257,7 @@ To achieve the above a bit of configuration is required.
   ```
   So scaling is based on cpu and memory utilization. To have this metrics available for HPA: Be aware that you need to additionally deploy a metrics server on EKS!
 
-  Ok nice, we are able to scale our application pods now if CPU or memory usage gets too high. But wait is this enough? No you are right! If we just have one DB instance, we would still have a bottleneck. In addition, for having a fast reaction for the POD scaling, its important to have fast container startup (readiness/liveness). For our tests against the required NFRS, using spring boot with our setup was sufficient but if needed it could be worth looking at a framework based on graal VM and native images.
+  Ok nice, we are able to scale our application pods now if CPU or memory usage gets too high. But wait is this enough? No you are right! If we just have one DB instance, we would still have a bottleneck. In addition, for having a fast reaction for the POD scaling, its important to have fast container startup (readiness/liveness). For our tests against the required NFRs, using spring boot with our setup was sufficient but if needed it could be worth looking at a framework based on graal VM and native images.
 
 - For making the DB also scalable we apply the following configuration (besides the settings already shown in [Multi AZ & Read Replicas](#multi-az--read-replicas)):
    ```terraform
@@ -289,7 +289,7 @@ Ok so finally we can scale the pods and also scale DB (vertically on the primary
 
 ## API
 
-We did our best on DB level and on application level, lets explore the possibilites on "API" level now!
+We did our best on DB level and on application level, lets explore the possibilities on "API" level now!
 
 ### API functionality
 
@@ -297,9 +297,9 @@ If the same team builds the backend and the frontend, it may be easier to align 
 In our case the development was split into backend teams and other teams building the UI. Those teams were even distributed all over the world. It may sound easy but its not: good communication is essential. Also understanding the other teams requirements and needs.
 Having said that, I think on API level there is maybe even the most impact on overal performance you can gain. Being a service in a cloud platform you can not fulfill all client needs on the other hand. But you should strive to optimize the core functionalities used by your service.
 
-For a REST API its important to have good filters. You dont want a frontend retrieving e.g. all x thousand buildings and searching for a specific building. And for retrieving all resources we introduced page size and number parameters so that a front-end can have better responsiveness when loading "all" resources.
+For a REST API its important to have good filters. You don't want a frontend retrieving e.g. all x thousand buildings and searching for a specific building. And for retrieving all resources we introduced page size and number parameters so that a front-end can have better responsiveness when loading "all" resources.
 Also, if you apply just CRUD for your "database" entities you may get some performance penalties, since some clients are interested in aggregated entities that can be retrieved with just one request. In our service for instance we have `addresses` as own resource as well as `locations`.
-Since some clients want to fetch this in one go, we introduced a `json:api` `include` query param to serve that.
+Since some clients want to fetch this in one go, we introduced a `json:api` `include` query parameter to serve that.
 As already mentioned earlier, while talking to the front-end teams, we identified their need for displaying a hierarchical structure tree of a building. As a solution, we added dedicated REST API endpoints for such use cases. Of course the corresponding queries and possible indexes on API/Backend level also need to be done right but again, being able to just make one rest call and retrieve a whole building structure is much more efficient than doing 100 of single calls and additional logic in the UI!
 
 As you see now, a good design of a REST API (your interface) is very important. In additiona to the design, the documentation of it is probably also as important. Your great implemented API endpoint does not help much, if users of the API fail to understand it and hence wont use it...
@@ -338,7 +338,7 @@ Another interesting approach are HTTP entity tags (ETags), a header which a serv
 
 ### Bulk operations and other media types
 
-Our API is using the `application/vnd.api+json` media type for our `json:api` compliant API. Some clients had the need for creating, deleting or patching multiple entries at once. For that we introduced a dedicated media type for bulk operation, similar to `application/vnd.yourapp.bulk+json`. Thats a bit of effort for implementing it but at the end you may save quite a bit due to reduced round trips and network overhead.
+Our API is using the `application/vnd.api+json` media type for our `json:api` compliant API. Some clients had the need for creating, deleting or patching multiple entries at once. For that we introduced a dedicated media type for bulk operation, similar to `application/vnd.yourapp.bulk+json`. That's a bit of effort for implementing it but at the end you may save quite a bit due to reduced round trips and network overhead.
 I like json:api and its good to have a standard for APIs especially when used in platform like in our case. But if performance is very crucial you could consider using yet another media type. You could have a try with `application/x-protobuf` which is very compact, binary format.
 
 
@@ -349,7 +349,7 @@ After some iterations our platform also had new requirements like having data av
 ## Monitoring and Testing
 
 Even though its the last chapter of this blog, its probably the most important aspect. You should not apply things blindly but rather continuously test your performance and montior your key metrics.
-Especially the initially mentioned NFR requirements, we wanted to test and be sure our service can fullfill it.
+Especially the initially mentioned NFR requirements, we wanted to test and be sure our service can fulfill it.
 
 ### Load Testing
 
@@ -359,7 +359,7 @@ We had hands on with postman, insomnia, artillery, k6, locust and were also look
 As usual there is not the best tool but at one point we decided to go on with `k6` which seemed to serve our needs best.
 
 K6 is an open source performance tool written in go but the actual tests are written in java script. You can run it e.g. locally in a docker container, in your CICD pipeline or you can run it even as a "Kubernetes Operator" (k6 operator) which distributes the tests across multiple K8s pods.
-We initially started with a simple k6 test but later decided to extend the setup and use the k6 operator in order to be able to test higher expected loads (futuere expected RPS and virtual users).
+We initially started with a simple k6 test but later decided to extend the setup and use the k6 operator in order to be able to test higher expected loads (future expected RPS and virtual users).
 
 A bit a challenging task was to prefill our database with the required amount of data especially in a reasonable time within our CICD pipelines. Also we wanted to have the data randomized and are using `javafaker` to get some variations of the data.
 At the end, the large setup creates more than 15 million db entities which took still more than an hour in our CICD setup. Hence we decided to only repopulate the DB from time to time.
@@ -404,12 +404,12 @@ export function scenario2(data) {
 }
 ```
 
-At the end of a test, K6 generates a test report with the configured trends. Thats very helpful for assessing performance over time and making sure the required NFRs are still met when new features are implemented.
+At the end of a test, K6 generates a test report with the configured trends. That's very helpful for assessing performance over time and making sure the required NFRs are still met when new features are implemented.
 And the whole setup with the large prefilled database and then k6 stressing our service only made certain bottlenecks visible!
 
 ### Monitoring & Alerting
 
-In addition to do load tests in CICD pipelines its advisable to monitor the production system with an eye on performance too. As e.g. mentioned in [Query Optimization](#query-optimization) you can enable slow query logs for instance. We also enabled access logs on our REST API on API Gatway
+In addition to do load tests in CICD pipelines its advisable to monitor the production system with an eye on performance too. As e.g. mentioned in [Query Optimization](#query-optimization) you can enable slow query logs for instance. We also enabled access logs on our REST API on API Gateway
 
 ```terraform
 locals {
@@ -430,7 +430,7 @@ access_log_settings {
 }
 ```
 
-Below parts of our grafana dashboard showing aspects of HPA and hikary and JDBC connections:
+Below parts of our grafana dashboard showing aspects of HPA and hikari and JDBC connections:
 
 ![layers](./grafana.png)
 
@@ -438,10 +438,10 @@ Such dashboards are helpful during development and in case of issues to analyze 
 
 # conclusions
 
-Finally some of my take aways in random order while working on improving the performance of our service:
+Finally some of my takeaways in random order while working on improving the performance of our service:
 
 - Performance optimization is a very interesting field for an engineer and not surprisingly, the effort increases a lot once you have done the low hanging fruits.
-- Though your cloud provider advertises with scalability and endless possibilities to boost your application, you still need to do your part. Sometimes its maybe only configuration but still you need to test and ideally monitor everything. Dont underestimate the effort!
+- Though your cloud provider advertises with scalability and endless possibilities to boost your application, you still need to do your part. Sometimes its maybe only configuration but still you need to test and ideally monitor everything. Don't underestimate the effort!
 - There are different layers in an application and hence also different attack points to optimize. At the end what matters is the perception end to end.
 - Building a good load test system helped us a lot. Be it for finding bottlenecks or guarantee NFRs are still met also after refactorings.
 - Only optimize performance if really needed! Don't over-engineer your system.
