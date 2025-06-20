@@ -438,12 +438,13 @@ Such dashboards are helpful during development and in case of issues to analyze 
 
 # conclusions
 
-Finally some of my take aways while working on improving the performance of our service:
+Finally some of my take aways in random order while working on improving the performance of our service:
 
-- Performance optimization is a very interesting field for an engineer and not surprisingly, the effort increases a lot once you have done the low hanging fruits
+- Performance optimization is a very interesting field for an engineer and not surprisingly, the effort increases a lot once you have done the low hanging fruits.
 - Though your cloud provider advertises with scalability and endless possibilities to boost your application, you still need to do your part. Sometimes its maybe only configuration but still you need to test and ideally monitor everything. Dont underestimate the effort!
-- There are different layers in an application and hence also different attack points to optimize. At the end what matters is the perception end to end
-- Building a good load test system helped us a lot. Be it for finding bottlenecks or guarantee NFRs are still met also after refactorings
+- There are different layers in an application and hence also different attack points to optimize. At the end what matters is the perception end to end.
+- Building a good load test system helped us a lot. Be it for finding bottlenecks or guarantee NFRs are still met also after refactorings.
+- Only optimize performance if really needed! Don't over-engineer your system.
 
 
 # links
