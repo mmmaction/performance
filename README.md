@@ -1,5 +1,5 @@
-Optimize performance of your Spring Boot App in the Cloud
-=========================================================
+Maximizing performance across the stack
+=======================================
 
 Performance may not necessarily be the first thing a developer worries about when developing software. But as a solution matures the aspect of performance will play its part sooner or later!
 
@@ -206,7 +206,7 @@ For infrastructure on AWS metrics are usually available or can be configured. Fo
 
 In your gradle file add a dependency for `com.amazonaws:aws-xray-recorder-sdk-bom` and then add `@XRayEnabled` annotation to e.g. your RestControllers, Services, Repositories and other important classes!
 
-:TODO: add sequence diagram of xray
+If everything is properly set up, you get insights on where time is spent for a single request (e.g. by traceId). In our case, we will see how much time is spent on API GW, how much on the integration up to the java image and then we also see hoch much time is spent in each method. In case of performance issues, this helps a lot in locating the area of the issue!
 
 ### Other Aspects
 
@@ -407,9 +407,7 @@ export function scenario2(data) {
 At the end of a test, K6 generates a test report with the configured trends. Thats very helpful for assessing performance over time and making sure the required NFRs are still met when new features are implemented.
 And the whole setup with the large prefilled database and then k6 stressing our service only made certain bottlenecks visible!
 
-:TODO: screenshot of grafan test run
-
-### Monitoring
+### Monitoring & Alerting
 
 In addition to do load tests in CICD pipelines its advisable to monitor the production system with an eye on performance too. As e.g. mentioned in [Query Optimization](#query-optimization) you can enable slow query logs for instance. We also enabled access logs on our REST API on API Gatway
 
@@ -432,10 +430,11 @@ access_log_settings {
 }
 ```
 
-- Instrument ? 
+Below parts of our grafana dashboard showing aspects of HPA and hikary and JDBC connections:
 
-:TODO: screenshot of dashboards
+![layers](./grafana.png)
 
+Such dashboards are helpful during development and in case of issues to analyze the system. I am personally a big fan of good alerts, that actively inform developers if certain metrics go up. So please add alerts for your most critical metrics for a production setup.
 
 # conclusions
 
@@ -450,3 +449,6 @@ Finally some of my take aways while working on improving the performance of our 
 # links
 - non-functional requirements, scaled agile: https://framework.scaledagile.com/nonfunctional-requirements
 - non-functional requirements, wikipedia: https://en.wikipedia.org/wiki/Non-functional_requirement
+- good blogs about performance regarding java persistence: https://vladmihalcea.com/
+- K6 testing tool: https://k6.io/
+- Example API providing bulk operations and recursive queries: https://developer.siemens.com/building-x-openness/api/building-structure/api-reference.html
