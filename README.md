@@ -90,7 +90,7 @@ In our setup we were using JPA (Java Persistance API) as an ORM (Object Relation
   ```    
 
 ### Multi AZ & Read Replicas
-For a production ready setup with high availability, we wanted to have multi availability zones (AZ). Aurora supports this out of the box. For scaling the read operations we also defined read replicas.
+For a production ready setup with high availability, we wanted to have multiple availability zones (AZ). Aurora supports this out of the box. For scaling the read operations, we also defined read replicas.
 
 - terraform configuration
   ```terraform
@@ -106,13 +106,15 @@ Things like read replicas we did not have from the beginning. This was rather a 
 
 ## Application
 
-Lets jump a layer up to the application, in our case, a spring boot java application. Though to be honest its not always only one or the other layer which is responsible for a certain aspect of performance. Often multiple layers are involved and need to be configured and adjusted correctly together!
+Let's move up to the application layer, which in our case is a Spring Boot Java application. Performance responsibilities are typically shared across different layers rather than being confined to a single one. Optimal performance often requires proper configuration and adjustment across multiple layers working together!
 
 ### Lazy vs Eager Loading
 
+_EAGER_ fetching loads all related entities immediately with the main entity, which can lead to performance issues due to unnecessary data loading, while _LAZY_ fetching loads related entities only when explicitly accessed, resulting in better initial load times but requiring careful handling to avoid N+1 query problems.
+
 In JPA/Hibernate the following fetch type is used per default
-- OneToOne or ManyToOne: EAGER
-- OneToMany or ManyToMany: LAZY
+- For OneToOne or ManyToOne → _EAGER_
+- For OneToMany or ManyToMany → _LAZY_
 
 Example of how to define explicit EAGER:
 ```java
@@ -136,7 +138,7 @@ To solve such an issue, there are multiple approaches like e.g. using a custom q
 List<Location> findLocationsWithAddress();
 ```
 
-or what we did, which was having custom repository methods that preload the referenced entites (e.g. addresses) in bulk for a set of locations in one query. The preloaded data is passed to the "mapper" which maps the entity classes to DTOs. Due to lazy fetch type, hibernate was executing the additional queries exactly in the mapper where the actual references were accessed.
+or what we did, which was having custom repository methods that preload the referenced entities (e.g. addresses) in bulk for a set of locations in one query. The preloaded data is passed to the "mapper" which maps the entity classes to DTOs. Due to lazy fetch type, hibernate was executing the additional queries exactly in the mapper where the actual references were accessed.
 
 ```java
 var dtos = mapper.mapAll(
@@ -183,7 +185,7 @@ public interface locationRepository extends JpaRepository<Location, Identifier> 
 
 Transaction management was one point, we did not handle great in the beginning. We defined write operations as transactional on Controller level and read operations were not marked as such. What did we change then?
 First its not recommended at all to use transactional on Controllers, it even may not work functionally correct (check for "proxy" and "AOP" to get into the details).
-Second, the goal is to keep transactions as short as possible since we don't want too lock DB tables too long. In our case, the method annotated with transactional contained logic that is not really required in a transaction. Putting the logic into a service method helps to split concerns. In our architecture, changes of business objects also need to emit `Domain Events`. Ideally this is not inside the DB transaction. You can use the the `Outbox Pattern` to tackle such a scenario.
+Second, the goal is to keep transactions as short as possible since we don't want too lock DB tables too long. In our case, the method annotated with transactional contained logic that is not really required in a transaction. Putting the logic into a service method helps to split concerns. In our architecture, changes of business objects also need to emit `Domain Events`. Ideally this is not inside the DB transaction. You can use the `Outbox Pattern` to tackle such a scenario.
 
 ### Connection Pooling
 
@@ -197,6 +199,8 @@ spring.datasource.reader.hikari.poolName=myReaderName
 spring.datasource.reader.hikari.readOnly=true
 ...
 ``` 
+
+Separate read and write connection pools allow you to optimize database access by routing read queries to read replicas while ensuring write operations go to the primary instance, improving overall performance.
 
 ### X-Ray
 
@@ -364,10 +368,10 @@ We initially started with a simple k6 test but later decided to extend the setup
 A bit a challenging task was to prefill our database with the required amount of data especially in a reasonable time within our CICD pipelines. Also we wanted to have the data randomized and are using `javafaker` to get some variations of the data.
 At the end, the large setup creates more than 15 million db entities which took still more than an hour in our CICD setup. Hence we decided to only repopulate the DB from time to time.
 
-Our actual k6 tests run 4 typical client scenarios in parallel for 10 minutes. The k6 test looks conceptually like below:
+Our actual k6 tests run 4 typical client scenarios in parallel for 10 minutes (e.g. services reading locations, services retrieving whole building structure and devices, and other scenarios also performing write operations). The k6 test looks conceptually like below:
 ```javascript
 export let options = {
-    teardownTimeout: '3m',
+    teardownTimeout: '2m',
     summaryTrendStats: ['avg', 'min', 'max', 'p(95)', 'p(99)'],
     scenarios: {
         scenario1: {
@@ -391,7 +395,7 @@ export function setup() {
 }
 
 export function scenario1(data) {
-    group('scenario1', function () {
+    group('scenario1-read-locations', function () {
         const response = readLocations(baseUrl, partitionId, filters);
         check(response, {
             'status is 2xx': (r) => r.status >= 200 && r.status < 300,
@@ -399,7 +403,7 @@ export function scenario1(data) {
 }
 
 export function scenario2(data) {
-    group('scenario2', function () {
+    group('scenario2-retrieve-building-structure', function () {
       // run scenario 2
 }
 ```
